@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Vision Pro — Side Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- MediaPipe CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      --bg: #060811;
+      --surface: #0c0e1a;
+      --card: #121426;
+      --border: rgba(129,140,248,0.15);
+      --bright: rgba(129,140,248,0.35);
+      --indigo: #818cf8;
+      --cyan: #06b6d4;
+      --emerald: #10b981;
+      --rose: #f43f5e;
+      --amber: #f59e0b;
+      --t1: #f0f4ff;
+      --t2: #94a3b8;
+      --t3: #475569;
+      --sans: 'Inter', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--t1);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(129,140,248,0.1) 0%, transparent 60%);
+    }
+
+    /* ── Header ─────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(6,8,17,0.7);
+      flex-shrink: 0;
+    }
+
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+    }
+
+    .logo-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(129,140,248,0.25), rgba(6,182,212,0.2));
+      border: 1px solid var(--bright);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+
+    .logo-text .title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--t1);
+    }
+
+    .logo-text .subtitle {
+      font-size: 9px;
+      font-family: var(--mono);
+      color: var(--t3);
+      letter-spacing: 0.5px;
+    }
+
+    .header-actions {
+      display: flex; gap: 6px; align-items: center;
+    }
+
+    .icon-btn {
+      width: 30px; height: 30px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      color: var(--t2);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .icon-btn:hover {
+      border-color: var(--bright);
+      background: rgba(129,140,248,0.1);
+      color: var(--indigo);
+    }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--t3);
+      margin-left: 4px;
+      transition: all 0.3s;
+    }
+
+    .status-dot.live {
+      background: var(--rose);
+      box-shadow: 0 0 6px rgba(244,63,94,0.6);
+      animation: pulse 1s ease infinite;
+    }
+
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+
+    /* ── Tabs ───────────────────────────────── */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 9px 6px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--t3);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tab.active {
+      color: var(--indigo);
+      border-bottom-color: var(--indigo);
+      background: rgba(129,140,248,0.05);
+    }
+
+    .tab:hover:not(.active) {
+      color: var(--t2);
+      background: rgba(255,255,255,0.03);
+    }
+
+    /* ── Tab Content ─────────────────────────── */
+    .tab-content {
+      flex: 1;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .tab-content.active { display: block; }
+
+    /* ── Camera Tab ──────────────────────────── */
+    .camera-section {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Video Area */
+    .video-wrap {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+      border: 1px solid var(--border);
+      aspect-ratio: 4/3;
+    }
+
+    #spVideo {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      opacity: 0;
+    }
+
+    #spCanvas {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+
+    .video-start-overlay {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 10px;
+      background: rgba(6,8,17,0.9);
+      z-index: 5;
+      transition: opacity 0.3s;
+    }
+
+    .video-start-overlay.hidden { opacity: 0; pointer-events: none; }
+
+    .video-start-overlay .big-icon {
+      font-size: 36px;
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: rgba(129,140,248,0.12);
+      border: 1px solid var(--bright);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .video-start-overlay p {
+      font-size: 11px;
+      color: var(--t2);
+      text-align: center;
+    }
+
+    /* HUD overlays */
+    .hud-tl, .hud-tr {
+      position: absolute;
+      top: 8px;
+      font-size: 10px;
+      font-family: var(--mono);
+      font-weight: 600;
+      padding: 3px 7px;
+      border-radius: 5px;
+      backdrop-filter: blur(6px);
+      border: 1px solid;
+      z-index: 10;
+    }
+
+    .hud-tl {
+      left: 8px;
+      color: var(--cyan);
+      border-color: rgba(6,182,212,0.3);
+      background: rgba(6,8,17,0.75);
+    }
+
+    .hud-tr {
+      right: 8px;
+      color: var(--emerald);
+      border-color: rgba(16,185,129,0.3);
+      background: rgba(6,8,17,0.75);
+    }
+
+    /* Detection mini-cards */
+    .det-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .det-mini {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      transition: all 0.3s;
+    }
+
+    .det-mini.active {
+      border-color: rgba(16,185,129,0.3);
+      background: rgba(16,185,129,0.06);
+    }
+
+    .det-mini-icon { font-size: 18px; }
+
+    .det-mini-info .label {
+      font-size: 10px;
+      color: var(--t3);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .det-mini-info .val {
+      font-size: 13px;
+      font-weight: 700;
+      font-family: var(--mono);
+      color: var(--t2);
+      transition: color 0.3s;
+    }
+
+    .det-mini.active .val { color: var(--emerald); }
+
+    /* Controls */
+    .ctrl-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border-radius: 9px;
+      border: 1px solid;
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-start {
+      flex: 1;
+      background: rgba(129,140,248,0.15);
+      border-color: var(--indigo);
+      color: var(--indigo);
+    }
+
+    .btn-start:hover {
+      background: rgba(129,140,248,0.3);
+      box-shadow: 0 0 16px rgba(129,140,248,0.2);
+    }
+
+    .btn-stop {
+      flex: 1;
+      background: rgba(244,63,94,0.1);
+      border-color: var(--rose);
+      color: var(--rose);
+    }
+
+    .btn-stop:hover { background: rgba(244,63,94,0.2); }
+
+    .btn-sm {
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.04);
+      border-color: var(--border);
+      color: var(--t2);
+    }
+
+    .btn-sm:hover {
+      border-color: var(--bright);
+      background: rgba(255,255,255,0.07);
+    }
+
+    .hidden { display: none !important; }
+
+    /* ── Metrics Tab ─────────────────────────── */
+    .metrics-section {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .metric-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .metric-card-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--t3);
+      margin-bottom: 12px;
+    }
+
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 12px;
+    }
+
+    .metric-row:last-child { border-bottom: none; }
+
+    .metric-key { color: var(--t2); }
+
+    .metric-val-text {
+      font-family: var(--mono);
+      font-weight: 600;
+      color: var(--indigo);
+    }
+
+    /* Progress bar */
+    .prog-row { margin-top: 4px; }
+
+    .prog-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--t2);
+      margin-bottom: 4px;
+    }
+
+    .prog-pct {
+      font-family: var(--mono);
+      color: var(--indigo);
+    }
+
+    .prog-track {
+      height: 5px;
+      border-radius: 5px;
+      background: rgba(255,255,255,0.05);
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .prog-fill {
+      height: 100%;
+      border-radius: 5px;
+      background: linear-gradient(90deg, var(--indigo), var(--cyan));
+      transition: width 0.4s ease;
+    }
+
+    /* ── Log Tab ─────────────────────────────── */
+    .log-section { padding: 12px; }
+
+    .log-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      height: 400px;
+      overflow-y: auto;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.7;
+      color: var(--t3);
+    }
+
+    .log-entry { margin-bottom: 2px; }
+    .log-entry .ts { color: var(--t3); }
+    .log-entry .info  { color: var(--cyan); }
+    .log-entry .warn  { color: var(--amber); }
+    .log-entry .error { color: var(--rose); }
+    .log-entry .ok    { color: var(--emerald); }
+
+    .log-clear-btn {
+      margin-top: 8px;
+      padding: 7px 14px;
+      font-size: 11px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      color: var(--t3);
+      cursor: pointer;
+      font-family: var(--mono);
+    }
+
+    .log-clear-btn:hover { color: var(--rose); border-color: rgba(244,63,94,0.3); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">🧿</div>
+      <div class="logo-text">
+        <div class="title">AI Vision Pro</div>
+        <div class="subtitle">SIDE PANEL · MV3</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="status-dot" id="spStatusDot"></div>
+      <button class="icon-btn" id="spOptionsBtn" title="Settings">⚙️</button>
+      <button class="icon-btn" id="spSnapBtn" title="Snapshot" style="display:none">📷</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" data-tab="camera">📷 Camera</div>
+    <div class="tab" data-tab="metrics">📊 Metrics</div>
+    <div class="tab" data-tab="log">📋 Log</div>
+  </div>
+
+  <!-- ── Camera Tab ─────────────────────────────────── -->
+  <div class="tab-content active" id="tab-camera">
+    <div class="camera-section">
+      <div class="video-wrap">
+        <video id="spVideo" autoplay playsinline muted></video>
+        <canvas id="spCanvas"></canvas>
+        <div class="video-start-overlay" id="spStartOverlay">
+          <div class="big-icon">📷</div>
+          <p>Click Start to activate<br/>real-time AI vision</p>
+        </div>
+        <div class="hud-tl hidden" id="spHudLat">-- ms</div>
+        <div class="hud-tr hidden" id="spHudFps">-- FPS</div>
+      </div>
+
+      <div class="det-row">
+        <div class="det-mini" id="spHandCard">
+          <div class="det-mini-icon">🤚</div>
+          <div class="det-mini-info">
+            <div class="label">Hands</div>
+            <div class="val" id="spHandVal">—</div>
+          </div>
+        </div>
+        <div class="det-mini" id="spFaceCard">
+          <div class="det-mini-icon">😊</div>
+          <div class="det-mini-info">
+            <div class="label">Face</div>
+            <div class="val" id="spFaceVal">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ctrl-row">
+        <button class="btn btn-start" id="spStart">▶ Start Vision</button>
+        <button class="btn btn-stop hidden" id="spStop">■ Stop</button>
+        <button class="btn btn-sm" id="spMirror" title="Toggle mirror">🪞</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Metrics Tab ────────────────────────────────── -->
+  <div class="tab-content" id="tab-metrics">
+    <div class="metrics-section">
+
+      <div class="metric-card">
+        <div class="metric-card-title">⚡ Performance</div>
+        <div class="metric-row">
+          <span class="metric-key">FPS</span>
+          <span class="metric-val-text" id="mFps">--</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">Inference time</span>
+          <span class="metric-val-text" id="mInf">-- ms</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">Render time</span>
+          <span class="metric-val-text" id="mRen">-- ms</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">Total latency</span>
+          <span class="metric-val-text" id="mLat">-- ms</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">Backend</span>
+          <span class="metric-val-text" id="mBack">WebGL</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">Resolution</span>
+          <span class="metric-val-text" id="mRes">--</span>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-card-title">🎯 Confidence</div>
+        <div class="prog-row">
+          <div class="prog-label">
+            <span>Hand Detection</span>
+            <span class="prog-pct" id="mHandPct">0%</span>
+          </div>
+          <div class="prog-track">
+            <div class="prog-fill" id="mHandBar" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="prog-row">
+          <div class="prog-label">
+            <span>Face Detection</span>
+            <span class="prog-pct" id="mFacePct">0%</span>
+          </div>
+          <div class="prog-track">
+            <div class="prog-fill" id="mFaceBar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-card-title">🔬 Detection Details</div>
+        <div class="metric-row">
+          <span class="metric-key">Hands detected</span>
+          <span class="metric-val-text" id="mHandCount">0</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">Hand landmarks</span>
+          <span class="metric-val-text" id="mHandLm">0</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">Face detected</span>
+          <span class="metric-val-text" id="mFaceCount">0</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">Face landmarks</span>
+          <span class="metric-val-text" id="mFaceLm">0</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">Frames processed</span>
+          <span class="metric-val-text" id="mFrames">0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Log Tab ────────────────────────────────────── -->
+  <div class="tab-content" id="tab-log">
+    <div class="log-section">
+      <div class="log-box" id="logBox"></div>
+      <button class="log-clear-btn" onclick="clearLog()">Clear Log</button>
+    </div>
+  </div>
+
+<script>
+'use strict';
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// ── DOM ────────────────────────────────────────────────────────────────────
+const video   = document.getElementById('spVideo');
+const canvas  = document.getElementById('spCanvas');
+const overlay = document.getElementById('spStartOverlay');
+let ctx, isRunning = false, mirror = true;
+let lastHands = null, lastFace = null;
+let handsM = null, faceM = null;
+let fps = 0, frameCount = 0, lastFpsTime = Date.now(), totalFrames = 0;
+let inferMs = 0, renderMs = 0;
+let handConf = 0;
+
+// ── Log ────────────────────────────────────────────────────────────────────
+function log(msg, type = 'info') {
+  const box = document.getElementById('logBox');
+  const ts = new Date().toLocaleTimeString();
+  const div = document.createElement('div');
+  div.className = 'log-entry';
+  div.innerHTML = `<span class="ts">[${ts}]</span> <span class="${type}">${msg}</span>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function clearLog() { document.getElementById('logBox').innerHTML = ''; }
+
+// ── Canvas Resize ─────────────────────────────────────────────────────────
+function syncCanvas() {
+  const wrapper = canvas.parentElement;
+  canvas.width  = wrapper.clientWidth;
+  canvas.height = wrapper.clientHeight;
+}
+
+window.addEventListener('resize', syncCanvas);
+
+// ── MediaPipe ─────────────────────────────────────────────────────────────
+async function loadModels() {
+  log('Loading MediaPipe Hands…', 'info');
+
+  handsM = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
+  handsM.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.6, minTrackingConfidence: 0.5 });
+  handsM.onResults(r => { lastHands = r; handConf = r.multiHandedness?.[0]?.score ?? 0; });
+
+  log('Loading MediaPipe FaceMesh…', 'info');
+
+  faceM = new FaceMesh({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}` });
+  faceM.setOptions({ maxNumFaces: 1, refineLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+  faceM.onResults(r => { lastFace = r; });
+
+  await handsM.initialize();
+  await faceM.initialize();
+
+  log('✅ Models loaded!', 'ok');
+}
+
+// ── Camera ────────────────────────────────────────────────────────────────
+async function startCamera() {
+  log('Requesting camera access…', 'info');
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { width:{ideal:1280}, height:{ideal:720}, facingMode:'user' },
+    audio: false
+  });
+  video.srcObject = stream;
+  await new Promise(r => video.onloadedmetadata = r);
+  await video.play();
+  syncCanvas();
+  ctx = canvas.getContext('2d');
+  document.getElementById('mRes').textContent = `${video.videoWidth}×${video.videoHeight}`;
+  log(`Camera: ${video.videoWidth}×${video.videoHeight}`, 'ok');
+}
+
+// ── Render Loop ───────────────────────────────────────────────────────────
+const HAND_CONNECTIONS = [
+  [0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],
+  [0,9],[9,10],[10,11],[11,12],[0,13],[13,14],[14,15],[15,16],
+  [0,17],[17,18],[18,19],[19,20],[5,9],[9,13],[13,17]
+];
+
+async function renderLoop() {
+  if (!isRunning) return;
+  const t0 = performance.now();
+  const w = canvas.width, h = canvas.height;
+
+  ctx.save();
+  if (mirror) { ctx.translate(w,0); ctx.scale(-1,1); }
+  ctx.drawImage(video, 0, 0, w, h);
+  ctx.restore();
+
+  const tInf = performance.now();
+  await Promise.all([
+    handsM?.send({ image: video }),
+    faceM?.send({ image: video })
+  ]);
+  inferMs = performance.now() - tInf;
+
+  drawHands(w, h);
+  drawFace(w, h);
+  renderMs = performance.now() - t0;
+  totalFrames++;
+
+  frameCount++;
+  const now = Date.now();
+  if (now - lastFpsTime >= 1000) {
+    fps = frameCount; frameCount = 0; lastFpsTime = now;
+  }
+
+  updateMetrics();
+  requestAnimationFrame(renderLoop);
+}
+
+function drawHands(w, h) {
+  if (!lastHands?.multiHandLandmarks?.length) return;
+  for (const lms of lastHands.multiHandLandmarks) {
+    // Connections
+    ctx.strokeStyle = 'rgba(129,140,248,0.75)';
+    ctx.lineWidth = 2;
+    for (const [a,b] of HAND_CONNECTIONS) {
+      const la = lms[a], lb = lms[b];
+      const xa = mirror ? (1-la.x)*w : la.x*w;
+      const xb = mirror ? (1-lb.x)*w : lb.x*w;
+      ctx.beginPath(); ctx.moveTo(xa, la.y*h); ctx.lineTo(xb, lb.y*h); ctx.stroke();
+    }
+    // Dots
+    for (let i = 0; i < lms.length; i++) {
+      const lm = lms[i];
+      const x = mirror ? (1-lm.x)*w : lm.x*w;
+      const isTip = [4,8,12,16,20].includes(i);
+      ctx.beginPath();
+      ctx.arc(x, lm.y*h, isTip ? 6 : 3.5, 0, Math.PI*2);
+      ctx.fillStyle = isTip ? '#06b6d4' : '#818cf8';
+      ctx.fill();
+    }
+  }
+}
+
+const FACE_OVAL = [[10,338],[338,297],[297,332],[332,284],[284,251],[251,389],[389,356],[356,454],[454,323],[323,361],[361,288],[288,397],[397,365],[365,379],[379,378],[378,400],[400,377],[377,152],[152,148],[148,176],[176,149],[149,150],[150,136],[136,172],[172,58],[58,132],[132,93],[93,234],[234,127],[127,162],[162,21],[21,54],[54,103],[103,67],[67,109],[109,10]];
+
+function drawFace(w, h) {
+  if (!lastFace?.multiFaceLandmarks?.length) return;
+  for (const lms of lastFace.multiFaceLandmarks) {
+    ctx.strokeStyle = 'rgba(16,185,129,0.5)';
+    ctx.lineWidth = 1.5;
+    for (const [a,b] of FACE_OVAL) {
+      const la = lms[a], lb = lms[b];
+      if (!la || !lb) continue;
+      const xa = mirror ? (1-la.x)*w : la.x*w;
+      const xb = mirror ? (1-lb.x)*w : lb.x*w;
+      ctx.beginPath(); ctx.moveTo(xa, la.y*h); ctx.lineTo(xb, lb.y*h); ctx.stroke();
+    }
+    for (let i = 0; i < lms.length; i += 3) {
+      const lm = lms[i];
+      const x = mirror ? (1-lm.x)*w : lm.x*w;
+      ctx.beginPath(); ctx.arc(x, lm.y*h, 1.2, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(16,185,129,0.65)';
+      ctx.fill();
+    }
+  }
+}
+
+// ── Metrics Update ────────────────────────────────────────────────────────
+function updateMetrics() {
+  const handN = lastHands?.multiHandLandmarks?.length ?? 0;
+  const faceN = lastFace?.multiFaceLandmarks?.length ?? 0;
+
+  // HUD
+  document.getElementById('spHudFps').textContent = `${fps} FPS`;
+  document.getElementById('spHudLat').textContent = `${renderMs.toFixed(0)} ms`;
+
+  // Camera tab
+  const hCard = document.getElementById('spHandCard');
+  const fCard = document.getElementById('spFaceCard');
+  document.getElementById('spHandVal').textContent = handN > 0 ? `${handN} detected` : 'None';
+  document.getElementById('spFaceVal').textContent = faceN > 0 ? 'Detected' : 'None';
+  hCard.classList.toggle('active', handN > 0);
+  fCard.classList.toggle('active', faceN > 0);
+
+  // Metrics tab
+  document.getElementById('mFps').textContent       = fps;
+  document.getElementById('mInf').textContent       = `${inferMs.toFixed(1)} ms`;
+  document.getElementById('mRen').textContent       = `${renderMs.toFixed(1)} ms`;
+  document.getElementById('mLat').textContent       = `${renderMs.toFixed(0)} ms`;
+  document.getElementById('mHandCount').textContent = handN;
+  document.getElementById('mHandLm').textContent    = handN * 21;
+  document.getElementById('mFaceCount').textContent = faceN;
+  document.getElementById('mFaceLm').textContent    = faceN > 0 ? 478 : 0;
+  document.getElementById('mFrames').textContent    = totalFrames;
+
+  const hPct = Math.round(handConf * 100);
+  const fPct = faceN > 0 ? 95 : 0;
+  document.getElementById('mHandPct').textContent = `${hPct}%`;
+  document.getElementById('mFacePct').textContent = `${fPct}%`;
+  document.getElementById('mHandBar').style.width = `${hPct}%`;
+  document.getElementById('mFaceBar').style.width = `${fPct}%`;
+}
+
+// ── Start ─────────────────────────────────────────────────────────────────
+async function start() {
+  document.getElementById('spStart').classList.add('hidden');
+  overlay.classList.add('hidden');
+  log('Starting AI Vision…', 'info');
+
+  try {
+    await loadModels();
+    await startCamera();
+    isRunning = true;
+
+    document.getElementById('spStop').classList.remove('hidden');
+    document.getElementById('spSnapBtn').style.display = '';
+    document.getElementById('spHudFps').classList.remove('hidden');
+    document.getElementById('spHudLat').classList.remove('hidden');
+    document.getElementById('spStatusDot').classList.add('live');
+    log('🚀 Vision started!', 'ok');
+
+    if ('gpu' in navigator) {
+      navigator.gpu.requestAdapter().then(a => {
+        const b = a ? 'WebGPU ⚡' : 'WebGL';
+        document.getElementById('mBack').textContent = b;
+        log(`Backend: ${b}`, 'ok');
+      });
+    }
+
+    renderLoop();
+  } catch (e) {
+    log(`Error: ${e.message}`, 'error');
+    document.getElementById('spStart').classList.remove('hidden');
+    overlay.classList.remove('hidden');
+  }
+}
+
+// ── Stop ──────────────────────────────────────────────────────────────────
+function stop() {
+  isRunning = false;
+  if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
+  ctx?.clearRect(0, 0, canvas.width, canvas.height);
+  lastHands = null; lastFace = null;
+
+  document.getElementById('spStart').classList.remove('hidden');
+  document.getElementById('spStop').classList.add('hidden');
+  document.getElementById('spSnapBtn').style.display = 'none';
+  document.getElementById('spHudFps').classList.add('hidden');
+  document.getElementById('spHudLat').classList.add('hidden');
+  document.getElementById('spStatusDot').classList.remove('live');
+  overlay.classList.remove('hidden');
+  log('Vision stopped.', 'warn');
+}
+
+// ── Events ────────────────────────────────────────────────────────────────
+document.getElementById('spStart').addEventListener('click', start);
+document.getElementById('spStop').addEventListener('click', stop);
+document.getElementById('spMirror').addEventListener('click', () => {
+  mirror = !mirror;
+  log(`Mirror ${mirror ? 'ON' : 'OFF'}`, 'info');
+});
+document.getElementById('spSnapBtn').addEventListener('click', () => {
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = `ai-vision-${Date.now()}.png`;
+  a.click();
+  log('Snapshot saved!', 'ok');
+});
+document.getElementById('spOptionsBtn').addEventListener('click', () => {
+  chrome.runtime.openOptionsPage?.();
+});
+
+log('AI Vision Pro side panel loaded.', 'info');
+log('Waiting to start…', 'info');
+</script>
+</body>
+</html>

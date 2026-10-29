@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Vision Pro — Settings</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:      #060811;
+      --surface: #0c0e1a;
+      --card:    #121426;
+      --border:  rgba(129,140,248,0.15);
+      --bright:  rgba(129,140,248,0.35);
+      --indigo:  #818cf8;
+      --cyan:    #06b6d4;
+      --emerald: #10b981;
+      --rose:    #f43f5e;
+      --amber:   #f59e0b;
+      --t1: #f0f4ff;
+      --t2: #94a3b8;
+      --t3: #475569;
+      --sans: 'Inter', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--t1);
+      min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse 60% 40% at 15% 0%, rgba(129,140,248,0.1) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 30% at 85% 100%, rgba(6,182,212,0.07) 0%, transparent 60%);
+    }
+
+    /* ── Nav ─────────────────── */
+    .nav {
+      border-bottom: 1px solid var(--border);
+      background: rgba(6,8,17,0.8);
+      backdrop-filter: blur(20px);
+      padding: 0 40px;
+    }
+
+    .nav-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-logo { font-size: 20px; }
+
+    .nav-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--t1);
+    }
+
+    .nav-sub {
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--t3);
+      margin-left: auto;
+    }
+
+    /* ── Main ─────────────────── */
+    .main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 40px 80px;
+    }
+
+    /* ── Page Header ─────────── */
+    .page-header {
+      margin-bottom: 36px;
+    }
+
+    .page-eyebrow {
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--indigo);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+
+    .page-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+    }
+
+    .page-desc {
+      font-size: 14px;
+      color: var(--t2);
+    }
+
+    /* ── Sections ────────────── */
+    .section {
+      margin-bottom: 32px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--t2);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-icon { font-size: 16px; }
+
+    /* ── Setting Cards ────────── */
+    .settings-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      gap: 16px;
+      transition: background 0.2s;
+    }
+
+    .setting-row:last-child { border-bottom: none; }
+    .setting-row:hover { background: rgba(255,255,255,0.03); }
+
+    .setting-icon {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      background: rgba(129,140,248,0.08);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .setting-info { flex: 1; }
+
+    .setting-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--t1);
+      margin-bottom: 3px;
+    }
+
+    .setting-desc {
+      font-size: 12px;
+      color: var(--t3);
+      line-height: 1.4;
+    }
+
+    /* Toggle */
+    .toggle {
+      position: relative;
+      display: inline-block;
+      width: 44px; height: 24px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .toggle input { opacity: 0; width: 0; height: 0; }
+
+    .slider {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(71,85,105,0.4);
+      border: 1px solid rgba(71,85,105,0.6);
+      border-radius: 24px;
+      transition: 0.25s;
+    }
+
+    .slider::before {
+      content: '';
+      position: absolute;
+      height: 18px; width: 18px;
+      left: 2px; bottom: 2px;
+      background: var(--t3);
+      border-radius: 50%;
+      transition: 0.25s;
+    }
+
+    .toggle input:checked + .slider {
+      background: rgba(129,140,248,0.3);
+      border-color: var(--indigo);
+    }
+
+    .toggle input:checked + .slider::before {
+      transform: translateX(20px);
+      background: var(--indigo);
+      box-shadow: 0 0 8px rgba(129,140,248,0.5);
+    }
+
+    /* Select */
+    .setting-select {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--t1);
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 7px 12px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s;
+      min-width: 140px;
+    }
+
+    .setting-select:focus { border-color: var(--indigo); }
+
+    .setting-select option {
+      background: var(--card);
+      color: var(--t1);
+    }
+
+    /* Range */
+    .setting-range-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 160px;
+    }
+
+    .setting-range {
+      -webkit-appearance: none;
+      width: 120px;
+      height: 4px;
+      background: rgba(129,140,248,0.2);
+      border-radius: 4px;
+      outline: none;
+    }
+
+    .setting-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--indigo);
+      cursor: pointer;
+      box-shadow: 0 0 6px rgba(129,140,248,0.5);
+    }
+
+    .range-val {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--indigo);
+      min-width: 28px;
+      text-align: right;
+    }
+
+    /* ── About Card ──────────── */
+    .about-card {
+      background: linear-gradient(135deg, rgba(129,140,248,0.08), rgba(6,182,212,0.05));
+      border: 1px solid var(--bright);
+      border-radius: 14px;
+      padding: 24px;
+    }
+
+    .about-logo {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+
+    .about-name {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+
+    .about-version {
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--t3);
+      margin-bottom: 12px;
+    }
+
+    .about-desc {
+      font-size: 13px;
+      color: var(--t2);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .about-tech {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tech-tag {
+      font-size: 10px;
+      font-family: var(--mono);
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--t3);
+      background: rgba(255,255,255,0.03);
+    }
+
+    /* ── Save Button ─────────── */
+    .save-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      padding: 16px 40px;
+      background: rgba(6,8,17,0.92);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .save-hint {
+      font-size: 12px;
+      color: var(--t3);
+      font-family: var(--mono);
+    }
+
+    .save-btn {
+      padding: 10px 28px;
+      border-radius: 8px;
+      border: 1px solid var(--indigo);
+      background: rgba(129,140,248,0.2);
+      color: var(--indigo);
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .save-btn:hover {
+      background: rgba(129,140,248,0.35);
+      box-shadow: 0 0 20px rgba(129,140,248,0.25);
+    }
+
+    .save-btn.saved {
+      border-color: var(--emerald);
+      background: rgba(16,185,129,0.2);
+      color: var(--emerald);
+    }
+
+    /* Notification */
+    .toast {
+      position: fixed;
+      top: 20px; right: 20px;
+      background: rgba(16,185,129,0.15);
+      border: 1px solid rgba(16,185,129,0.4);
+      color: var(--emerald);
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      backdrop-filter: blur(10px);
+      transform: translateY(-10px);
+      opacity: 0;
+      transition: all 0.3s;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-logo">🧿</div>
+      <div class="nav-title">AI Vision Pro</div>
+      <div class="nav-sub">SETTINGS / OPTIONS</div>
+    </div>
+  </nav>
+
+  <div class="main">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="page-eyebrow">Configuration</div>
+      <h1 class="page-title">Extension Settings</h1>
+      <p class="page-desc">Configure AI models, performance, and visual overlays for real-time computer vision.</p>
+    </div>
+
+    <!-- ── Section: AI Models ─────────────────────────────────── -->
+    <div class="section">
+      <div class="section-title">
+        <span class="section-icon">🤖</span>
+        AI Models
+      </div>
+      <div class="settings-card">
+        <div class="setting-row">
+          <div class="setting-icon">🤚</div>
+          <div class="setting-info">
+            <div class="setting-name">Hand Detection</div>
+            <div class="setting-desc">Detect and track hand landmarks in real-time (21 points per hand)</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="enableHands" checked /><span class="slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-icon">😊</div>
+          <div class="setting-info">
+            <div class="setting-name">Face Mesh</div>
+            <div class="setting-desc">478-point face mesh with iris refinement landmarks</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="enableFace" checked /><span class="slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-icon">⚙️</div>
+          <div class="setting-info">
+            <div class="setting-name">Model Complexity</div>
+            <div class="setting-desc">Higher = more accurate but slower. 0=lite, 1=full, 2=heavy</div>
+          </div>
+          <select class="setting-select" id="modelComplexity">
+            <option value="0">0 — Lite (fastest)</option>
+            <option value="1" selected>1 — Full (balanced)</option>
+            <option value="2">2 — Heavy (most accurate)</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <div class="setting-icon">🖐️</div>
+          <div class="setting-info">
+            <div class="setting-name">Max Hands</div>
+            <div class="setting-desc">Maximum number of hands to detect simultaneously</div>
+          </div>
+          <div class="setting-range-wrapper">
+            <input type="range" class="setting-range" id="maxHands" min="1" max="4" value="2" oninput="document.getElementById('maxHandsVal').textContent=this.value" />
+            <span class="range-val" id="maxHandsVal">2</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-icon">🎯</div>
+          <div class="setting-info">
+            <div class="setting-name">Detection Confidence</div>
+            <div class="setting-desc">Minimum confidence threshold for hand/face detection</div>
+          </div>
+          <div class="setting-range-wrapper">
+            <input type="range" class="setting-range" id="detectionConfidence" min="1" max="9" value="5" oninput="document.getElementById('detConfVal').textContent='0.'+this.value" />
+            <span class="range-val" id="detConfVal">0.5</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Section: Rendering ────────────────────────────────── -->
+    <div class="section">
+      <div class="section-title">
+        <span class="section-icon">🎨</span>
+        Rendering & Display
+      </div>
+      <div class="settings-card">
+        <div class="setting-row">
+          <div class="setting-icon">🔵</div>
+          <div class="setting-info">
+            <div class="setting-name">Show Landmarks</div>
+            <div class="setting-desc">Draw joint points on hands and face</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="showLandmarks" checked /><span class="slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-icon">🔗</div>
+          <div class="setting-info">
+            <div class="setting-name">Show Connections</div>
+            <div class="setting-desc">Draw skeleton connections between landmarks</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="showConnections" checked /><span class="slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-icon">🪞</div>
+          <div class="setting-info">
+            <div class="setting-name">Mirror Video</div>
+            <div class="setting-desc">Flip the video horizontally (natural mirror effect for selfie cam)</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="mirrorVideo" checked /><span class="slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-icon">📊</div>
+          <div class="setting-info">
+            <div class="setting-name">Performance HUD</div>
+            <div class="setting-desc">Show FPS, latency, and inference time overlay</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="showHUD" checked /><span class="slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-icon">🎨</div>
+          <div class="setting-info">
+            <div class="setting-name">Overlay Theme</div>
+            <div class="setting-desc">Color scheme for landmark overlays</div>
+          </div>
+          <select class="setting-select" id="overlayTheme">
+            <option value="indigo-cyan">Indigo/Cyan (default)</option>
+            <option value="green-lime">Emerald/Lime</option>
+            <option value="pink-purple">Pink/Purple</option>
+            <option value="amber-orange">Amber/Orange</option>
+            <option value="white">Pure White</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Section: Performance ────────────────────────────── -->
+    <div class="section">
+      <div class="section-title">
+        <span class="section-icon">⚡</span>
+        Performance & Backend
+      </div>
+      <div class="settings-card">
+        <div class="setting-row">
+          <div class="setting-icon">🖥️</div>
+          <div class="setting-info">
+            <div class="setting-name">Inference Backend</div>
+            <div class="setting-desc">GPU backend for model inference. WebGPU is fastest if supported.</div>
+          </div>
+          <select class="setting-select" id="inferenceBackend">
+            <option value="auto">Auto-detect (recommended)</option>
+            <option value="webgpu">WebGPU (fastest)</option>
+            <option value="webgl">WebGL (most compatible)</option>
+            <option value="wasm">WASM (CPU fallback)</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <div class="setting-icon">🎞️</div>
+          <div class="setting-info">
+            <div class="setting-name">Target FPS</div>
+            <div class="setting-desc">Maximum frames per second for processing (higher = more CPU/GPU)</div>
+          </div>
+          <select class="setting-select" id="targetFPS">
+            <option value="15">15 FPS (battery saver)</option>
+            <option value="24">24 FPS</option>
+            <option value="30" selected>30 FPS (recommended)</option>
+            <option value="60">60 FPS (high performance)</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <div class="setting-icon">📹</div>
+          <div class="setting-info">
+            <div class="setting-name">Camera Resolution</div>
+            <div class="setting-desc">Webcam capture resolution. Higher = more detail, more CPU</div>
+          </div>
+          <select class="setting-select" id="cameraRes">
+            <option value="480">480p (fastest)</option>
+            <option value="720" selected>720p (recommended)</option>
+            <option value="1080">1080p (highest quality)</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <div class="setting-icon">🧵</div>
+          <div class="setting-info">
+            <div class="setting-name">Use Offscreen Processing</div>
+            <div class="setting-desc">Run AI inference in offscreen document to avoid blocking UI thread (MV3)</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="useOffscreen" checked /><span class="slider"></span></label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Section: Content Script ────────────────────────── -->
+    <div class="section">
+      <div class="section-title">
+        <span class="section-icon">💉</span>
+        Content Script (Webpage Integration)
+      </div>
+      <div class="settings-card">
+        <div class="setting-row">
+          <div class="setting-icon">🎬</div>
+          <div class="setting-info">
+            <div class="setting-name">Auto-detect Videos</div>
+            <div class="setting-desc">Automatically show AI Vision panel on pages with video elements</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="autoDetect" /><span class="slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-icon">🪟</div>
+          <div class="setting-info">
+            <div class="setting-name">Floating Panel</div>
+            <div class="setting-desc">Show draggable control panel when AI Vision is active on a page</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="floatingPanel" checked /><span class="slider"></span></label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── About ──────────────────────────────────────────── -->
+    <div class="section">
+      <div class="section-title">
+        <span class="section-icon">ℹ️</span>
+        About
+      </div>
+      <div class="about-card">
+        <div class="about-logo">🧿</div>
+        <div class="about-name">AI Vision Pro</div>
+        <div class="about-version">v1.0.0 · Chrome Extension MV3 · Proof of Concept</div>
+        <div class="about-desc">
+          Real-time browser-based computer vision using MediaPipe AI models.
+          All inference runs locally — no cloud, no data sent to servers.
+          Built as a technical feasibility PoC for WebRTC + AI/CV integration.
+        </div>
+        <div class="about-tech">
+          <span class="tech-tag">Manifest V3</span>
+          <span class="tech-tag">MediaPipe Hands</span>
+          <span class="tech-tag">MediaPipe FaceMesh</span>
+          <span class="tech-tag">WebRTC</span>
+          <span class="tech-tag">Canvas 2D</span>
+          <span class="tech-tag">OffscreenCanvas</span>
+          <span class="tech-tag">WebGPU</span>
+          <span class="tech-tag">Service Worker</span>
+          <span class="tech-tag">TensorFlow.js</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Save Bar -->
+  <div class="save-bar">
+    <span class="save-hint">Changes are auto-saved to chrome.storage.local</span>
+    <button class="save-btn" id="saveBtn" onclick="saveSettings()">Save Settings</button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">✅ Settings saved!</div>
+
+  <script>
+    const KEYS = [
+      'enableHands','enableFace','modelComplexity','maxHands','detectionConfidence',
+      'showLandmarks','showConnections','mirrorVideo','showHUD','overlayTheme',
+      'inferenceBackend','targetFPS','cameraRes','useOffscreen','autoDetect','floatingPanel'
+    ];
+
+    // Load saved settings
+    chrome.storage.local.get(KEYS, (saved) => {
+      KEYS.forEach(key => {
+        const el = document.getElementById(key);
+        if (!el || !(key in saved)) return;
+        if (el.type === 'checkbox') el.checked = saved[key];
+        else el.value = saved[key];
+
+        // Update range labels
+        if (key === 'maxHands') document.getElementById('maxHandsVal').textContent = saved[key];
+        if (key === 'detectionConfidence') document.getElementById('detConfVal').textContent = '0.' + saved[key];
+      });
+    });
+
+    function saveSettings() {
+      const data = {};
+      KEYS.forEach(key => {
+        const el = document.getElementById(key);
+        if (!el) return;
+        data[key] = el.type === 'checkbox' ? el.checked : el.value;
+      });
+
+      chrome.storage.local.set(data, () => {
+        const btn = document.getElementById('saveBtn');
+        const toast = document.getElementById('toast');
+        btn.classList.add('saved');
+        btn.textContent = '✓ Saved!';
+        toast.classList.add('show');
+
+        setTimeout(() => {
+          btn.classList.remove('saved');
+          btn.textContent = 'Save Settings';
+          toast.classList.remove('show');
+        }, 2500);
+      });
+    }
+
+    // Auto-save on any change
+    KEYS.forEach(key => {
+      const el = document.getElementById(key);
+      if (el) el.addEventListener('change', saveSettings);
+    });
+  </script>
+</body>
+</html>

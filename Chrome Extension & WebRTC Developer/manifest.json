@@ -1,0 +1,84 @@
+{
+  "manifest_version": 3,
+  "name": "AI Vision Pro",
+  "short_name": "AI Vision",
+  "version": "1.0.0",
+  "description": "Production-ready real-time AI vision: Face detection, hand tracking, pose estimation, object detection — powered by MediaPipe, TensorFlow.js & ONNX Runtime. WebRTC + WebGPU accelerated.",
+
+  "icons": {
+    "16":  "icons/icon16.png",
+    "32":  "icons/icon32.png",
+    "48":  "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+
+  "action": {
+    "default_popup": "popup/index.html",
+    "default_title": "AI Vision Pro — Real-time AI Camera",
+    "default_icon": {
+      "16":  "icons/icon16.png",
+      "32":  "icons/icon32.png",
+      "48":  "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+
+  "options_ui": {
+    "page": "sidepanel/index.html",
+    "open_in_tab": true
+  },
+
+  "side_panel": {
+    "default_path": "sidepanel/index.html"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/content.js"],
+      "css": [],
+      "run_at": "document_idle",
+      "all_frames": false,
+      "match_about_blank": false
+    }
+  ],
+
+  "permissions": [
+    "activeTab",
+    "storage",
+    "offscreen",
+    "sidePanel",
+    "tabs",
+    "scripting",
+    "alarms",
+    "unlimitedStorage"
+  ],
+
+  "host_permissions": [
+    "<all_urls>"
+  ],
+
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/*",
+        "chunks/*",
+        "vendor/*",
+        "assets/*",
+        "workers/*.js",
+        "*.wasm",
+        "models/*"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; connect-src 'self' https://cdn.jsdelivr.net https://tfhub.dev https://storage.googleapis.com https://unpkg.com;"
+  }
+}

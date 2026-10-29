@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <!--
+    Offscreen Document for MV3
+    This runs in a hidden context with access to getUserMedia and canvas APIs.
+    Used for heavy AI processing to avoid blocking the popup UI thread.
+  -->
+</head>
+<body>
+  <video id="video" style="display:none" playsinline muted></video>
+  <canvas id="canvas" style="display:none"></canvas>
+  <script src="offscreen.js"></script>
+</body>
+</html>

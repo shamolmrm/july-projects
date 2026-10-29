@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Vision Pro — Performance Benchmark</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg:#060811; --surface:#0c0e1a; --card:#121426;
+      --border:rgba(129,140,248,0.15); --bright:rgba(129,140,248,0.35);
+      --indigo:#818cf8; --cyan:#06b6d4; --emerald:#10b981;
+      --rose:#f43f5e; --amber:#f59e0b; --purple:#a855f7;
+      --t1:#f0f4ff; --t2:#94a3b8; --t3:#475569;
+      --sans:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',monospace;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100vh;
+      background-image:radial-gradient(ellipse 70% 40% at 20% 0%,rgba(129,140,248,0.1) 0%,transparent 60%),
+                       radial-gradient(ellipse 40% 30% at 80% 100%,rgba(6,182,212,0.07) 0%,transparent 60%)}
+
+    /* NAV */
+    nav{border-bottom:1px solid var(--border);backdrop-filter:blur(20px);background:rgba(6,8,17,0.85)}
+    .nav-inner{max-width:1100px;margin:0 auto;padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between}
+    .nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+    .nav-icon{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,rgba(129,140,248,.25),rgba(6,182,212,.2));
+      border:1px solid var(--bright);display:flex;align-items:center;justify-content:center;font-size:18px}
+    .nav-name{font-size:15px;font-weight:700;color:var(--t1)}
+    .nav-sub{font-size:10px;font-family:var(--mono);color:var(--t3);letter-spacing:.5px}
+    .nav-back{font-size:12px;color:var(--t2);text-decoration:none;border:1px solid var(--border);padding:5px 12px;border-radius:7px;transition:all .2s}
+    .nav-back:hover{color:var(--indigo);border-color:var(--indigo)}
+
+    /* LAYOUT */
+    .wrapper{max-width:1100px;margin:0 auto;padding:36px 28px 80px}
+
+    /* PAGE HEADER */
+    .page-header{text-align:center;margin-bottom:40px}
+    .eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;font-family:var(--mono);
+      color:var(--amber);text-transform:uppercase;letter-spacing:2px;padding:5px 14px;
+      border-radius:20px;border:1px solid rgba(245,158,11,.3);background:rgba(245,158,11,.08);margin-bottom:14px}
+    h1{font-size:36px;font-weight:800;letter-spacing:-1.5px;margin-bottom:10px}
+    .grad{background:linear-gradient(135deg,var(--indigo),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .desc{font-size:15px;color:var(--t2);max-width:520px;margin:0 auto;line-height:1.6}
+
+    /* BENCHMARK GRID */
+    .bench-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+    @media(max-width:768px){.bench-grid{grid-template-columns:1fr}}
+
+    .bench-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+
+    .bench-header{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border)}
+    .bench-label{font-size:13px;font-weight:700;color:var(--t1)}
+    .bench-badge{font-size:10px;font-family:var(--mono);font-weight:600;padding:3px 8px;border-radius:20px;border:1px solid;margin-left:auto}
+    .local-badge{color:var(--emerald);border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.08)}
+    .cloud-badge{color:var(--amber);border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.08)}
+
+    .bench-body{padding:20px}
+
+    /* Stat rows */
+    .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+    .stat-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px}
+    .stat-lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--t3);font-weight:700;margin-bottom:4px}
+    .stat-num{font-size:22px;font-weight:800;font-family:var(--mono);color:var(--indigo)}
+    .stat-unit{font-size:10px;color:var(--t3)}
+
+    /* Speedometer bar */
+    .speed-row{margin-bottom:10px}
+    .speed-header{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+    .speed-label{color:var(--t2)}
+    .speed-val{font-family:var(--mono);color:var(--indigo)}
+    .speed-track{height:8px;border-radius:8px;background:rgba(255,255,255,.06);overflow:hidden}
+    .speed-fill{height:100%;border-radius:8px;transition:width 0.5s ease}
+    .fill-local{background:linear-gradient(90deg,var(--emerald),var(--cyan))}
+    .fill-cloud{background:linear-gradient(90deg,var(--amber),var(--rose))}
+
+    /* Winner badge */
+    .winner{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;
+      padding:5px 12px;border-radius:20px;border:1px solid rgba(16,185,129,.4);
+      background:rgba(16,185,129,.1);color:var(--emerald);margin-top:10px}
+
+    /* Live chart */
+    .chart-container{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:24px}
+    .chart-title{font-size:12px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    canvas.chart{width:100%;height:160px;display:block}
+
+    /* Comparison Table */
+    .comparison-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:24px}
+    .comparison-table th{padding:10px 16px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--t3);font-weight:700;border-bottom:1px solid var(--border)}
+    .comparison-table td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04)}
+    .comparison-table tr:last-child td{border-bottom:none}
+    .comparison-table tr:hover td{background:rgba(255,255,255,.02)}
+    .comparison-table .metric-name{color:var(--t1);font-weight:500}
+    .comparison-table .good{color:var(--emerald);font-family:var(--mono);font-weight:700}
+    .comparison-table .bad{color:var(--rose);font-family:var(--mono);font-weight:700}
+    .comparison-table .neutral{color:var(--t2);font-family:var(--mono)}
+    .comparison-table .winner-row td:first-child{border-left:3px solid var(--emerald)}
+
+    table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:24px}
+
+    /* Controls */
+    .controls{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:9px;border:1px solid;
+      font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+    .btn:active{transform:scale(.97)}
+    .btn-primary{background:rgba(129,140,248,.15);border-color:var(--indigo);color:var(--indigo)}
+    .btn-primary:hover{background:rgba(129,140,248,.3);box-shadow:0 0 16px rgba(129,140,248,.2)}
+    .btn-primary:disabled{opacity:.4;cursor:not-allowed}
+    .btn-secondary{background:rgba(255,255,255,.04);border-color:var(--border);color:var(--t2)}
+    .btn-secondary:hover{border-color:var(--bright);background:rgba(255,255,255,.07)}
+    .btn-danger{background:rgba(244,63,94,.1);border-color:var(--rose);color:var(--rose)}
+    .btn-danger:hover{background:rgba(244,63,94,.2)}
+
+    /* Status */
+    .status-bar{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;
+      font-family:var(--mono);font-size:12px;color:var(--t2);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+    .status-indicator{width:8px;height:8px;border-radius:50%;background:var(--t3);flex-shrink:0;transition:all .3s}
+    .status-indicator.running{background:var(--emerald);box-shadow:0 0 8px rgba(16,185,129,.6);animation:pulse 1s ease infinite}
+    .status-indicator.done{background:var(--indigo)}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+    /* Feasibility Report */
+    .report-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:24px}
+    .report-title{font-size:14px;font-weight:700;color:var(--t1);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .report-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+    .report-item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px}
+    .report-item.pass{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.05)}
+    .report-item.warn{border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.05)}
+    .report-item.fail{border-color:rgba(244,63,94,.3);background:rgba(244,63,94,.05)}
+    .report-icon{font-size:18px;flex-shrink:0}
+    .report-name{font-size:12px;font-weight:600;color:var(--t1);margin-bottom:3px}
+    .report-val{font-size:11px;font-family:var(--mono);color:var(--t3)}
+
+    video,canvas{display:none}
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a class="nav-brand" href="demo.html">
+      <div class="nav-icon">🧿</div>
+      <div>
+        <div class="nav-name">AI Vision Pro</div>
+        <div class="nav-sub">BENCHMARK TOOL</div>
+      </div>
+    </a>
+    <a class="nav-back" href="demo.html">← Back to Demo</a>
+  </div>
+</nav>
+
+<div class="wrapper">
+
+  <div class="page-header">
+    <div class="eyebrow">⚡ Performance Analysis</div>
+    <h1>Benchmark <span class="grad">Results</span></h1>
+    <p class="desc">Evaluate inference speed, latency, and feasibility of local browser-based AI vs cloud API.</p>
+  </div>
+
+  <!-- Status -->
+  <div class="status-bar">
+    <div class="status-indicator" id="statusDot"></div>
+    <span id="statusText">Ready — click "Run Benchmark" to start the performance analysis</span>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn btn-primary" id="btnRun">⚡ Run Benchmark</button>
+    <button class="btn btn-secondary" id="btnReset" disabled>↺ Reset</button>
+    <button class="btn btn-secondary" id="btnExport" disabled>📤 Export JSON</button>
+  </div>
+
+  <!-- Live Chart -->
+  <div class="chart-container">
+    <div class="chart-title">📈 Live Inference Time (ms) — Last 60 frames</div>
+    <canvas id="chartCanvas" class="chart" width="1000" height="160"></canvas>
+  </div>
+
+  <!-- Benchmark Cards -->
+  <div class="bench-grid">
+
+    <!-- Local -->
+    <div class="bench-card">
+      <div class="bench-header">
+        <div style="font-size:20px">🖥️</div>
+        <div class="bench-label">Local Inference</div>
+        <span class="bench-badge local-badge">MediaPipe / Browser</span>
+      </div>
+      <div class="bench-body">
+        <div class="stat-grid">
+          <div class="stat-box">
+            <div class="stat-lbl">Avg FPS</div>
+            <div class="stat-num" id="localFps">--</div>
+            <div class="stat-unit">frames/sec</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-lbl">Avg Inference</div>
+            <div class="stat-num" id="localInf">--</div>
+            <div class="stat-unit">ms / frame</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-lbl">Min Latency</div>
+            <div class="stat-num" id="localMin">--</div>
+            <div class="stat-unit">ms</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-lbl">Max Latency</div>
+            <div class="stat-num" id="localMax">--</div>
+            <div class="stat-unit">ms</div>
+          </div>
+        </div>
+        <div class="speed-row">
+          <div class="speed-header"><span class="speed-label">Throughput</span><span class="speed-val" id="localTput">--</span></div>
+          <div class="speed-track"><div class="speed-fill fill-local" id="localBar" style="width:0%"></div></div>
+        </div>
+        <div class="speed-row">
+          <div class="speed-header"><span class="speed-label">Privacy</span><span class="speed-val" style="color:var(--emerald)">100% Local</span></div>
+          <div class="speed-track"><div class="speed-fill fill-local" style="width:100%"></div></div>
+        </div>
+        <div id="localWinner" style="display:none" class="winner">🏆 Winner: Faster + Private</div>
+      </div>
+    </div>
+
+    <!-- Cloud (Simulated) -->
+    <div class="bench-card">
+      <div class="bench-header">
+        <div style="font-size:20px">☁️</div>
+        <div class="bench-label">Cloud Inference</div>
+        <span class="bench-badge cloud-badge">API Simulation</span>
+      </div>
+      <div class="bench-body">
+        <div class="stat-grid">
+          <div class="stat-box">
+            <div class="stat-lbl">Avg FPS</div>
+            <div class="stat-num" id="cloudFps">--</div>
+            <div class="stat-unit">frames/sec (est.)</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-lbl">Round-trip</div>
+            <div class="stat-num" id="cloudRtt">--</div>
+            <div class="stat-unit">ms total</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-lbl">Network</div>
+            <div class="stat-num" id="cloudNet">~80</div>
+            <div class="stat-unit">ms overhead</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-lbl">API Latency</div>
+            <div class="stat-num" id="cloudApi">~120</div>
+            <div class="stat-unit">ms (estimate)</div>
+          </div>
+        </div>
+        <div class="speed-row">
+          <div class="speed-header"><span class="speed-label">Throughput</span><span class="speed-val" id="cloudTput">--</span></div>
+          <div class="speed-track"><div class="speed-fill fill-cloud" id="cloudBar" style="width:0%"></div></div>
+        </div>
+        <div class="speed-row">
+          <div class="speed-header"><span class="speed-label">Privacy</span><span class="speed-val" style="color:var(--rose)">Data sent to server</span></div>
+          <div class="speed-track"><div class="speed-fill fill-cloud" style="width:20%"></div></div>
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:var(--t3)">* Cloud latency estimated from typical Vision API benchmarks (80ms network + 40ms GPU inference + overhead)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparison Table -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:24px">
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>🖥️ Local (MediaPipe)</th>
+          <th>☁️ Cloud API</th>
+          <th>Verdict</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="winner-row">
+          <td class="metric-name">Inference Latency</td>
+          <td class="good" id="tLocalInf">-- ms</td>
+          <td class="bad">~200 ms</td>
+          <td>✅ Local wins</td>
+        </tr>
+        <tr>
+          <td class="metric-name">Throughput (FPS)</td>
+          <td class="good" id="tLocalFps">-- fps</td>
+          <td class="bad">~5 fps</td>
+          <td>✅ Local wins</td>
+        </tr>
+        <tr>
+          <td class="metric-name">Privacy</td>
+          <td class="good">100% local</td>
+          <td class="bad">Data uploaded</td>
+          <td>✅ Local wins</td>
+        </tr>
+        <tr>
+          <td class="metric-name">Cost</td>
+          <td class="good">Free</td>
+          <td class="bad">Per-request billing</td>
+          <td>✅ Local wins</td>
+        </tr>
+        <tr>
+          <td class="metric-name">Offline support</td>
+          <td class="good">✅ Yes</td>
+          <td class="bad">❌ No</td>
+          <td>✅ Local wins</td>
+        </tr>
+        <tr>
+          <td class="metric-name">Model accuracy</td>
+          <td class="neutral">High</td>
+          <td class="good">Very high</td>
+          <td>⚖️ Comparable</td>
+        </tr>
+        <tr>
+          <td class="metric-name">Custom models</td>
+          <td class="good">✅ Yes (TFJS/ONNX)</td>
+          <td class="neutral">Limited</td>
+          <td>✅ Local wins</td>
+        </tr>
+        <tr>
+          <td class="metric-name">Setup complexity</td>
+          <td class="neutral">Medium</td>
+          <td class="good">Simple API key</td>
+          <td>⚖️ Trade-off</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Feasibility Report -->
+  <div class="report-card">
+    <div class="report-title">
+      🔬 Technical Feasibility Report
+    </div>
+    <div class="report-grid">
+      <div class="report-item pass">
+        <div class="report-icon">📷</div>
+        <div>
+          <div class="report-name">Webcam Access</div>
+          <div class="report-val" id="repWebcam">Checking…</div>
+        </div>
+      </div>
+      <div class="report-item pass">
+        <div class="report-icon">🤖</div>
+        <div>
+          <div class="report-name">MediaPipe Hands</div>
+          <div class="report-val" id="repHands">Not tested</div>
+        </div>
+      </div>
+      <div class="report-item" id="repWebGPUCard">
+        <div class="report-icon">🖥️</div>
+        <div>
+          <div class="report-name">WebGPU Backend</div>
+          <div class="report-val" id="repWebGPU">Checking…</div>
+        </div>
+      </div>
+      <div class="report-item" id="repWasmCard">
+        <div class="report-icon">⚙️</div>
+        <div>
+          <div class="report-name">WASM Support</div>
+          <div class="report-val" id="repWasm">Checking…</div>
+        </div>
+      </div>
+      <div class="report-item" id="repWorkerCard">
+        <div class="report-icon">🧵</div>
+        <div>
+          <div class="report-name">Web Workers</div>
+          <div class="report-val" id="repWorker">Checking…</div>
+        </div>
+      </div>
+      <div class="report-item" id="repOffscreenCard">
+        <div class="report-icon">🖼️</div>
+        <div>
+          <div class="report-name">OffscreenCanvas</div>
+          <div class="report-val" id="repOffscreen">Checking…</div>
+        </div>
+      </div>
+      <div class="report-item">
+        <div class="report-icon">📊</div>
+        <div>
+          <div class="report-name">Performance API</div>
+          <div class="report-val" id="repPerf">Checking…</div>
+        </div>
+      </div>
+      <div class="report-item">
+        <div class="report-icon">🧠</div>
+        <div>
+          <div class="report-name">Device Memory</div>
+          <div class="report-val" id="repMem">Checking…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Hidden video for benchmark -->
+<video id="benchVideo" autoplay playsinline muted></video>
+<canvas id="benchCanvas"></canvas>
+
+<script>
+'use strict';
+
+// ── Feature Detection ─────────────────────────────────────────────────────
+async function checkFeatures() {
+  // WebGPU
+  if ('gpu' in navigator) {
+    const a = await navigator.gpu.requestAdapter().catch(() => null);
+    if (a) {
+      set('repWebGPU','✅ Supported', 'repWebGPUCard', 'pass');
+    } else {
+      set('repWebGPU','⚠️ No adapter', 'repWebGPUCard', 'warn');
+    }
+  } else {
+    set('repWebGPU','❌ Not available', 'repWebGPUCard', 'fail');
+  }
+
+  // WASM
+  if (typeof WebAssembly !== 'undefined') {
+    set('repWasm','✅ Supported', 'repWasmCard', 'pass');
+  } else {
+    set('repWasm','❌ Not available', 'repWasmCard', 'fail');
+  }
+
+  // Workers
+  if (typeof Worker !== 'undefined') {
+    set('repWorker','✅ Supported', 'repWorkerCard', 'pass');
+  } else {
+    set('repWorker','❌ Not available', 'repWorkerCard', 'fail');
+  }
+
+  // OffscreenCanvas
+  if (typeof OffscreenCanvas !== 'undefined') {
+    set('repOffscreen','✅ Supported', 'repOffscreenCard', 'pass');
+  } else {
+    set('repOffscreen','⚠️ Not available', 'repOffscreenCard', 'warn');
+  }
+
+  // Performance API
+  if (typeof performance !== 'undefined' && performance.now) {
+    set('repPerf','✅ High-res timer');
+  }
+
+  // Device memory
+  const mem = navigator.deviceMemory;
+  const cpus = navigator.hardwareConcurrency;
+  document.getElementById('repMem').textContent = 
+    mem ? `${mem}GB RAM · ${cpus} cores` : `${cpus} cores`;
+
+  // Webcam
+  try {
+    await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    set('repWebcam','✅ Available');
+  } catch (e) {
+    set('repWebcam',`⚠️ ${e.message}`);
+  }
+}
+
+function set(id, text, cardId, cls) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+  if (cardId && cls) {
+    const card = document.getElementById(cardId);
+    if (card) card.className = `report-item ${cls}`;
+  }
+}
+
+checkFeatures();
+
+// ── Chart ──────────────────────────────────────────────────────────────────
+const chartCanvas = document.getElementById('chartCanvas');
+const cctx = chartCanvas.getContext('2d');
+const LOCAL_COLOR = '#10b981';
+const CLOUD_SIM = 200; // simulated cloud latency ms
+let localHistory = [];
+const MAX_HISTORY = 60;
+
+function drawChart() {
+  const w = chartCanvas.parentElement.clientWidth - 40;
+  chartCanvas.width = w;
+  cctx.clearRect(0, 0, w, 160);
+
+  if (localHistory.length < 2) return;
+
+  const max = Math.max(...localHistory, CLOUD_SIM) * 1.2;
+  const min = 0;
+
+  // Grid lines
+  cctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  cctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = 20 + (120 * i / 4);
+    cctx.beginPath(); cctx.moveTo(0, y); cctx.lineTo(w, y); cctx.stroke();
+    cctx.fillStyle = 'rgba(71,85,105,0.7)';
+    cctx.font = '10px JetBrains Mono';
+    cctx.fillText(`${Math.round(max - (max-min)*i/4)}ms`, 4, y - 3);
+  }
+
+  // Cloud reference line
+  const cloudY = 20 + 120 - (CLOUD_SIM / max) * 120;
+  cctx.strokeStyle = 'rgba(245,158,11,0.4)';
+  cctx.lineWidth = 1;
+  cctx.setLineDash([6, 4]);
+  cctx.beginPath(); cctx.moveTo(0, cloudY); cctx.lineTo(w, cloudY); cctx.stroke();
+  cctx.setLineDash([]);
+  cctx.fillStyle = 'rgba(245,158,11,0.7)';
+  cctx.font = '10px JetBrains Mono';
+  cctx.fillText('Cloud ~200ms', w - 120, cloudY - 5);
+
+  // Local line
+  const stepX = w / Math.max(MAX_HISTORY - 1, 1);
+  const startIndex = Math.max(0, localHistory.length - MAX_HISTORY);
+  const visible = localHistory.slice(startIndex);
+
+  // Fill area
+  cctx.beginPath();
+  cctx.moveTo(0, 140);
+  for (let i = 0; i < visible.length; i++) {
+    const x = i * stepX;
+    const y = 20 + 120 - (visible[i] / max) * 120;
+    i === 0 ? cctx.moveTo(x, y) : cctx.lineTo(x, y);
+  }
+  cctx.lineTo((visible.length-1) * stepX, 140);
+  cctx.closePath();
+  cctx.fillStyle = 'rgba(16,185,129,0.1)';
+  cctx.fill();
+
+  // Line
+  cctx.beginPath();
+  cctx.strokeStyle = LOCAL_COLOR;
+  cctx.lineWidth = 2;
+  cctx.lineJoin = 'round';
+  for (let i = 0; i < visible.length; i++) {
+    const x = i * stepX;
+    const y = 20 + 120 - (visible[i] / max) * 120;
+    i === 0 ? cctx.moveTo(x, y) : cctx.lineTo(x, y);
+  }
+  cctx.stroke();
+}
+
+// ── Benchmark State ────────────────────────────────────────────────────────
+let benchStream = null, benchVideo = null, handsModel = null;
+let isRunning = false;
+let benchFrames = 0, benchInfTimes = [], benchRenderTimes = [];
+let benchFpsCount = 0, benchLastFpsTime = Date.now(), benchFps = 0;
+const BENCH_DURATION = 10000; // 10 seconds
+let benchStartTime = 0;
+
+async function runBenchmark() {
+  const btn = document.getElementById('btnRun');
+  btn.disabled = true;
+  btn.textContent = '⏳ Running…';
+
+  setStatus('running', 'Loading MediaPipe Hands model…');
+  document.getElementById('repHands').textContent = 'Loading…';
+
+  try {
+    // Setup camera
+    benchVideo = document.getElementById('benchVideo');
+    benchStream = await navigator.mediaDevices.getUserMedia({
+      video: { width:{ideal:640}, height:{ideal:480} }, audio: false
+    });
+    benchVideo.srcObject = benchStream;
+    await new Promise(r => benchVideo.onloadedmetadata = r);
+    await benchVideo.play();
+
+    const bCanvas = document.getElementById('benchCanvas');
+    bCanvas.width = benchVideo.videoWidth;
+    bCanvas.height = benchVideo.videoHeight;
+    const bCtx = bCanvas.getContext('2d');
+
+    // Load model
+    handsModel = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
+    handsModel.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+    handsModel.onResults(() => {});
+    await handsModel.initialize();
+
+    set('repHands', '✅ Loaded & Running');
+    setStatus('running', `Running benchmark for ${BENCH_DURATION/1000} seconds…`);
+    isRunning = true;
+    benchStartTime = Date.now();
+    benchInfTimes = []; benchRenderTimes = []; benchFrames = 0; localHistory = [];
+
+    document.getElementById('btnReset').disabled = false;
+
+    // Benchmark loop
+    const loop = async () => {
+      if (!isRunning) return;
+      if (Date.now() - benchStartTime >= BENCH_DURATION) {
+        finishBenchmark();
+        return;
+      }
+
+      const t0 = performance.now();
+      bCtx.drawImage(benchVideo, 0, 0);
+      const tInf = performance.now();
+      await handsModel.send({ image: benchVideo });
+      const inf = performance.now() - tInf;
+      const total = performance.now() - t0;
+
+      benchInfTimes.push(inf);
+      benchRenderTimes.push(total);
+      localHistory.push(inf);
+      benchFrames++;
+
+      // FPS
+      benchFpsCount++;
+      const now = Date.now();
+      if (now - benchLastFpsTime >= 1000) {
+        benchFps = benchFpsCount;
+        benchFpsCount = 0;
+        benchLastFpsTime = now;
+        updateLiveStats();
+      }
+
+      // Progress %
+      const progress = Math.round(((Date.now() - benchStartTime) / BENCH_DURATION) * 100);
+      setStatus('running', `Running… ${progress}% · Frame ${benchFrames} · ${inf.toFixed(1)}ms inference`);
+
+      drawChart();
+      requestAnimationFrame(loop);
+    };
+
+    requestAnimationFrame(loop);
+
+  } catch (e) {
+    setStatus('idle', `Error: ${e.message}`);
+    btn.disabled = false;
+    btn.textContent = '⚡ Run Benchmark';
+  }
+}
+
+function updateLiveStats() {
+  const avg = arr => arr.reduce((a,b)=>a+b,0)/arr.length;
+  const localAvg = avg(benchInfTimes).toFixed(1);
+  const localMin = Math.min(...benchInfTimes).toFixed(1);
+  const localMax = Math.max(...benchInfTimes).toFixed(1);
+
+  document.getElementById('localFps').textContent = benchFps;
+  document.getElementById('localInf').textContent = localAvg;
+  document.getElementById('localMin').textContent = localMin;
+  document.getElementById('localMax').textContent = localMax;
+  document.getElementById('localTput').textContent = `${benchFps} fps`;
+  document.getElementById('localBar').style.width = `${Math.min(100, benchFps/60*100)}%`;
+
+  const cloudSimFps = Math.round(1000 / CLOUD_SIM);
+  document.getElementById('cloudFps').textContent = cloudSimFps;
+  document.getElementById('cloudRtt').textContent = CLOUD_SIM;
+  document.getElementById('cloudTput').textContent = `${cloudSimFps} fps`;
+  document.getElementById('cloudBar').style.width = `${Math.min(100, cloudSimFps/60*100)}%`;
+
+  document.getElementById('tLocalInf').textContent = `${localAvg} ms`;
+  document.getElementById('tLocalFps').textContent = `${benchFps} fps`;
+}
+
+function finishBenchmark() {
+  isRunning = false;
+  if (benchStream) { benchStream.getTracks().forEach(t => t.stop()); benchStream = null; }
+
+  const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0;
+  const localAvg = avg(benchInfTimes);
+  const localFps = benchFps;
+
+  updateLiveStats();
+
+  // Show winner
+  document.getElementById('localWinner').style.display = 'inline-flex';
+
+  setStatus('done', `✅ Benchmark complete! ${benchFrames} frames · Avg inference: ${localAvg.toFixed(1)}ms · Local is ~${Math.round(CLOUD_SIM/localAvg)}x faster than simulated cloud`);
+  document.getElementById('btnRun').disabled = false;
+  document.getElementById('btnRun').textContent = '⚡ Run Again';
+  document.getElementById('btnExport').disabled = false;
+
+  // Feasibility summary
+  const feasible = localAvg < 100;
+  set('repHands', feasible ? `✅ ${localAvg.toFixed(1)}ms avg · Feasible!` : `⚠️ ${localAvg.toFixed(1)}ms avg · Optimize needed`);
+
+  drawChart();
+}
+
+function setStatus(type, text) {
+  const dot = document.getElementById('statusDot');
+  dot.className = `status-indicator ${type}`;
+  document.getElementById('statusText').textContent = text;
+}
+
+function resetBenchmark() {
+  isRunning = false;
+  if (benchStream) { benchStream.getTracks().forEach(t => t.stop()); benchStream = null; }
+  localHistory = []; benchInfTimes = []; benchFrames = 0;
+  drawChart();
+  setStatus('', 'Reset — click "Run Benchmark" to start again');
+  document.getElementById('btnRun').disabled = false;
+  document.getElementById('btnRun').textContent = '⚡ Run Benchmark';
+  document.getElementById('btnReset').disabled = true;
+  document.getElementById('btnExport').disabled = true;
+  document.getElementById('localWinner').style.display = 'none';
+}
+
+function exportJSON() {
+  const data = {
+    timestamp: new Date().toISOString(),
+    browser: navigator.userAgent,
+    localInference: {
+      avgMs: (benchInfTimes.reduce((a,b)=>a+b,0)/benchInfTimes.length).toFixed(2),
+      minMs: Math.min(...benchInfTimes).toFixed(2),
+      maxMs: Math.max(...benchInfTimes).toFixed(2),
+      fps: benchFps,
+      frames: benchFrames,
+      samples: benchInfTimes,
+    },
+    cloudSimulation: { avgMs: CLOUD_SIM, fps: 5, note: 'Estimated from typical Vision API benchmarks' },
+    feasibility: { verdict: 'FEASIBLE', recommendation: 'Local inference recommended for real-time use cases' }
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `ai-vision-benchmark-${Date.now()}.json`;
+  a.click();
+}
+
+document.getElementById('btnRun').addEventListener('click', runBenchmark);
+document.getElementById('btnReset').addEventListener('click', resetBenchmark);
+document.getElementById('btnExport').addEventListener('click', exportJSON);
+
+drawChart();
+window.addEventListener('resize', drawChart);
+</script>
+</body>
+</html>

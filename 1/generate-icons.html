@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head><title>Icon Generator</title></head>
+<body>
+<canvas id="c128" width="128" height="128" style="display:none"></canvas>
+<canvas id="c48" width="48" height="48" style="display:none"></canvas>
+<canvas id="c32" width="32" height="32" style="display:none"></canvas>
+<canvas id="c16" width="16" height="16" style="display:none"></canvas>
+<script>
+function drawIcon(canvas) {
+  const ctx = canvas.getContext('2d');
+  const s = canvas.width;
+  const cx = s / 2, cy = s / 2;
+  const r = s * 0.42;
+
+  // Background
+  const bgGrad = ctx.createRadialGradient(cx, cy - s*0.1, 0, cx, cy, s*0.6);
+  bgGrad.addColorStop(0, '#1a1f3a');
+  bgGrad.addColorStop(1, '#060811');
+  ctx.fillStyle = bgGrad;
+  ctx.beginPath();
+  ctx.roundRect(0, 0, s, s, s * 0.18);
+  ctx.fill();
+
+  // Outer glow ring
+  const glowGrad = ctx.createRadialGradient(cx, cy, r * 0.7, cx, cy, r * 1.1);
+  glowGrad.addColorStop(0, 'rgba(129,140,248,0.0)');
+  glowGrad.addColorStop(1, 'rgba(129,140,248,0.15)');
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 1.1, 0, Math.PI * 2);
+  ctx.fillStyle = glowGrad;
+  ctx.fill();
+
+  // Outer ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(129,140,248,0.5)';
+  ctx.lineWidth = s * 0.025;
+  ctx.stroke();
+
+  // Mid ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.65, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(6,182,212,0.4)';
+  ctx.lineWidth = s * 0.015;
+  ctx.stroke();
+
+  // Inner circle (core)
+  const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 0.35);
+  coreGrad.addColorStop(0, '#ffffff');
+  coreGrad.addColorStop(0.3, '#818cf8');
+  coreGrad.addColorStop(0.7, '#06b6d4');
+  coreGrad.addColorStop(1, 'rgba(6,182,212,0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.35, 0, Math.PI * 2);
+  ctx.fillStyle = coreGrad;
+  ctx.fill();
+
+  // Cross lines (neural network spokes)
+  const angles = [0, 45, 90, 135, 180, 225, 270, 315].map(a => a * Math.PI / 180);
+  for (const angle of angles) {
+    const x1 = cx + Math.cos(angle) * r * 0.38;
+    const y1 = cy + Math.sin(angle) * r * 0.38;
+    const x2 = cx + Math.cos(angle) * r * 0.62;
+    const y2 = cy + Math.sin(angle) * r * 0.62;
+    const lineGrad = ctx.createLinearGradient(x1, y1, x2, y2);
+    lineGrad.addColorStop(0, 'rgba(129,140,248,0.8)');
+    lineGrad.addColorStop(1, 'rgba(6,182,212,0.5)');
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = lineGrad;
+    ctx.lineWidth = s * 0.018;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // Node dot at end
+    ctx.beginPath();
+    ctx.arc(x2, y2, s * 0.018, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(6,182,212,0.9)';
+    ctx.fill();
+  }
+}
+
+function downloadCanvas(canvas, filename) {
+  drawIcon(canvas);
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = filename;
+  a.click();
+}
+
+// Auto-generate all sizes
+window.onload = () => {
+  ['128','48','32','16'].forEach(size => {
+    const canvas = document.getElementById('c' + size);
+    drawIcon(canvas);
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = `icon${size}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  });
+  document.body.innerHTML += '<p style="font-family:sans-serif;color:green;padding:20px">✅ Icons downloaded! Move them to the icons/ folder.</p>';
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Vision Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- ── Header ─────────────────────────────────────────── -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="3" fill="url(#g1)"/>
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" fill="url(#g1)" opacity="0.4"/>
+            <defs>
+              <linearGradient id="g1" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#818cf8"/>
+                <stop offset="100%" stop-color="#06b6d4"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <span class="logo-title">AI Vision Pro</span>
+          <span class="logo-sub">MediaPipe · WebRTC · MV3</span>
+        </div>
+      </div>
+      <div id="statusBadge" class="badge badge--idle">IDLE</div>
+    </header>
+
+    <!-- ── Video Feed ──────────────────────────────────────── -->
+    <div class="video-container">
+      <div id="videoPlaceholder" class="video-placeholder">
+        <div class="placeholder-icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+            <path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z" fill="url(#vc)"/>
+            <defs>
+              <linearGradient id="vc" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#818cf8"/>
+                <stop offset="1" stop-color="#06b6d4"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <p>Click <strong>Start</strong> to activate webcam</p>
+      </div>
+      <canvas id="outputCanvas" class="video-canvas hidden"></canvas>
+      <div id="fpsOverlay" class="fps-overlay hidden">
+        <span id="fpsValue">--</span> FPS
+      </div>
+      <div id="latencyOverlay" class="latency-overlay hidden">
+        <span id="latencyValue">--</span> ms
+      </div>
+    </div>
+
+    <!-- ── Detection Results ──────────────────────────────── -->
+    <div class="detections-row">
+      <div class="detection-card" id="handCard">
+        <div class="detection-icon">🤚</div>
+        <div class="detection-info">
+          <span class="detection-label">Hands</span>
+          <span class="detection-value" id="handCount">—</span>
+        </div>
+        <div class="detection-dot" id="handDot"></div>
+      </div>
+      <div class="detection-card" id="faceCard">
+        <div class="detection-icon">😊</div>
+        <div class="detection-info">
+          <span class="detection-label">Face Mesh</span>
+          <span class="detection-value" id="faceCount">—</span>
+        </div>
+        <div class="detection-dot" id="faceDot"></div>
+      </div>
+    </div>
+
+    <!-- ── Performance Metrics ────────────────────────────── -->
+    <div class="metrics-grid" id="metricsGrid">
+      <div class="metric">
+        <span class="metric-label">Inference</span>
+        <span class="metric-val" id="inferenceTime">— ms</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Render</span>
+        <span class="metric-val" id="renderTime">— ms</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Resolution</span>
+        <span class="metric-val" id="resolution">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Backend</span>
+        <span class="metric-val" id="backend">WebGL</span>
+      </div>
+    </div>
+
+    <!-- ── Settings ───────────────────────────────────────── -->
+    <div class="settings-panel">
+      <div class="settings-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" opacity="0.6"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+        Settings
+      </div>
+      <div class="toggle-row">
+        <label class="toggle-label" for="toggleHands">Hand Detection</label>
+        <label class="toggle" for="toggleHands">
+          <input type="checkbox" id="toggleHands" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <label class="toggle-label" for="toggleFace">Face Mesh</label>
+        <label class="toggle" for="toggleFace">
+          <input type="checkbox" id="toggleFace" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <label class="toggle-label" for="toggleLandmarks">Show Landmarks</label>
+        <label class="toggle" for="toggleLandmarks">
+          <input type="checkbox" id="toggleLandmarks" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- ── Controls ───────────────────────────────────────── -->
+    <div class="controls">
+      <button id="btnStart" class="btn btn--primary">
+        <span class="btn-icon">▶</span> Start Vision
+      </button>
+      <button id="btnStop" class="btn btn--danger hidden">
+        <span class="btn-icon">■</span> Stop
+      </button>
+      <button id="btnSnapshot" class="btn btn--ghost hidden">
+        <span class="btn-icon">📷</span>
+      </button>
+    </div>
+
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
